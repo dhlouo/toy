@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BodySync 클리닉 — 맞춤 건강 분석</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --bg2: #f7f7f5;
+    --bg3: #f0efea;
+    --text: #1a1a1a;
+    --text2: #6b6b6b;
+    --text3: #9a9a9a;
+    --border: rgba(0,0,0,0.12);
+    --border2: rgba(0,0,0,0.22);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --brand: #1a1a2e;
+    --green: #4caf7d;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1e;
+      --bg2: #2c2c2e;
+      --bg3: #3a3a3c;
+      --text: #f2f2f7;
+      --text2: #aeaeb2;
+      --text3: #636366;
+      --border: rgba(255,255,255,0.1);
+      --border2: rgba(255,255,255,0.2);
+      --brand: #4a6fa5;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+    background: var(--bg3);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 460px;
+    background: var(--bg);
+    border-radius: var(--radius-xl);
+    padding: 2rem 1.5rem 2.5rem;
+    box-shadow: 0 2px 24px rgba(0,0,0,0.08);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1.75rem;
+  }
+
+  .brand-logo {
+    width: 38px;
+    height: 38px;
+    background: var(--brand);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .brand-logo svg { width: 22px; height: 22px; }
+  .brand-name { font-size: 15px; font-weight: 600; color: var(--text); }
+  .brand-sub { font-size: 12px; color: var(--text2); margin-top: 1px; }
+
+  .step-bar { display: flex; gap: 4px; margin-bottom: 1.5rem; }
+  .step-dot { height: 3px; flex: 1; border-radius: 2px; background: var(--border); transition: background 0.35s; }
+  .step-dot.active { background: var(--brand); }
+  .step-dot.done { background: var(--green); }
+
+  .step-label { font-size: 12px; color: var(--text3); margin-bottom: 4px; }
+  .step-title { font-size: 21px; font-weight: 600; color: var(--text); margin-bottom: 6px; line-height: 1.3; }
+  .step-desc { font-size: 14px; color: var(--text2); margin-bottom: 1.75rem; line-height: 1.65; }
+
+  .field { margin-bottom: 1.25rem; }
+  .field > label { font-size: 13px; color: var(--text2); display: block; margin-bottom: 7px; font-weight: 500; }
+
+  input[type="number"],
+  input[type="text"],
+  select {
+    width: 100%;
+    padding: 11px 14px;
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-md);
+    font-size: 15px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  input[type="number"]:focus,
+  select:focus {
+    border-color: var(--brand);
+  }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .chip-group { display: flex; flex-wrap: wrap; gap: 7px; }
+
+  .chip {
+    padding: 8px 15px;
+    border-radius: 20px;
+    border: 0.5px solid var(--border2);
+    font-size: 13px;
+    cursor: pointer;
+    background: var(--bg);
+    color: var(--text);
+    transition: all 0.15s;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .chip.selected {
+    background: var(--brand);
+    color: #fff;
+    border-color: var(--brand);
+  }
+
+  .chip:hover:not(.selected) { background: var(--bg2); }
+
+  .slider-wrap { display: flex; align-items: center; gap: 12px; }
+
+  input[type="range"] {
+    flex: 1;
+    height: 4px;
+    appearance: none;
+    -webkit-appearance: none;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--brand);
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+
+  .slider-val {
+    font-size: 14px;
+    font-weight: 600;
+    min-width: 48px;
+    text-align: right;
+    color: var(--text);
+  }
+
+  .stress-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 5px;
+  }
+
+  .stress-labels span { font-size: 11px; color: var(--text3); }
+
+  .btn-primary {
+    width: 100%;
+    padding: 15px;
+    background: var(--brand);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 0.75rem;
+    transition: opacity 0.15s, transform 0.1s;
+    letter-spacing: -0.2px;
+  }
+
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-secondary {
+    width: 100%;
+    padding: 13px;
+    background: transparent;
+    color: var(--text2);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: background 0.15s;
+  }
+
+  .btn-secondary:hover { background: var(--bg2); }
+
+  /* Loading */
+  .loading-wrap { text-align: center; padding: 3.5rem 0; }
+
+  .spinner {
+    width: 44px;
+    height: 44px;
+    border: 2.5px solid var(--border);
+    border-top-color: var(--brand);
+    border-radius: 50%;
+    animation: spin 0.75s linear infinite;
+    margin: 0 auto 1.25rem;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-wrap p { font-size: 14px; color: var(--text2); line-height: 1.6; }
+  .loading-progress { font-size: 12px; color: var(--text3); margin-top: 6px; }
+
+  /* Result */
+  .result-card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    margin-bottom: 0.875rem;
+  }
+
+  .result-card.highlight {
+    border-color: var(--brand);
+    border-width: 1.5px;
+  }
+
+  .rc-label { font-size: 12px; color: var(--text2); margin-bottom: 5px; font-weight: 500; }
+  .rc-value { font-size: 24px; font-weight: 700; color: var(--text); line-height: 1.2; }
+  .rc-value span { font-size: 15px; font-weight: 400; color: var(--text2); }
+  .rc-sub { font-size: 13px; color: var(--text2); margin-top: 4px; }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 0.875rem;
+  }
+
+  .metric-item {
+    background: var(--bg2);
+    border-radius: var(--radius-md);
+    padding: 0.875rem 1rem;
+  }
+
+  .mi-label { font-size: 11px; color: var(--text3); margin-bottom: 4px; font-weight: 500; }
+  .mi-val { font-size: 18px; font-weight: 700; color: var(--text); }
+  .mi-change { font-size: 11px; margin-top: 2px; font-weight: 500; }
+  .mi-change.good { color: #2e9e5e; }
+  .mi-change.bad { color: #c94040; }
+  .mi-change.neutral { color: var(--text3); }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 14px;
+    margin-bottom: 1rem;
+  }
+
+  .tag.green { background: #eaf3de; color: #2e6e0e; }
+  .tag.amber { background: #faeeda; color: #7a4800; }
+  .tag.red { background: #fcebeb; color: #942020; }
+
+  .tag::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .insight-list { list-style: none; margin-bottom: 0; }
+
+  .insight-list li {
+    font-size: 13px;
+    color: var(--text2);
+    padding: 9px 0;
+    border-bottom: 0.5px solid var(--border);
+    line-height: 1.6;
+    display: flex;
+    gap: 9px;
+    align-items: flex-start;
+  }
+
+  .insight-list li:last-child { border-bottom: none; padding-bottom: 0; }
+
+  .insight-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--brand);
+    flex-shrink: 0;
+    margin-top: 6px;
+  }
+
+  .cta-card {
+    background: var(--brand);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    color: #fff;
+    margin-bottom: 0.875rem;
+  }
+
+  .cta-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 7px; }
+
+  .cta-card p {
+    font-size: 13px;
+    opacity: 0.8;
+    margin-bottom: 1.25rem;
+    line-height: 1.65;
+  }
+
+  .btn-cta {
+    width: 100%;
+    padding: 14px;
+    background: #fff;
+    color: var(--brand);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    letter-spacing: -0.2px;
+  }
+
+  .btn-cta:hover { opacity: 0.92; }
+
+  .divider {
+    height: 0.5px;
+    background: var(--border);
+    margin: 1.25rem 0;
+  }
+
+  .disclaimer {
+    font-size: 11px;
+    color: var(--text3);
+    text-align: center;
+    line-height: 1.7;
+    margin-top: 1rem;
+  }
+
+  .hidden { display: none !important; }
+
+  /* Step animation */
+  .fade-in {
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 500px) {
+    body { padding: 0; align-items: flex-start; }
+    .app {
+      border-radius: 0;
+      min-height: 100vh;
+      box-shadow: none;
+      padding: 1.5rem 1.25rem 3rem;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- 브랜드 헤더 -->
+  <div class="brand">
+    <div class="brand-logo">
+      <svg viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="11" cy="11" r="8" stroke="#4caf7d" stroke-width="1.75"/>
+        <path d="M7.5 11.5l2.5 2.5 4.5-5" stroke="#4caf7d" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div>
+      <div class="brand-name">BodySync 클리닉</div>
+      <div class="brand-sub">AI 맞춤형 건강 분석 서비스</div>
+    </div>
+  </div>
+
+  <!-- 진행 바 -->
+  <div class="step-bar" id="stepBar">
+    <div class="step-dot active" id="dot0"></div>
+    <div class="step-dot" id="dot1"></div>
+    <div class="step-dot" id="dot2"></div>
+    <div class="step-dot" id="dot3"></div>
+  </div>
+
+  <!-- ─── Step 0: 기본 신체 정보 ─── -->
+  <div id="step0" class="fade-in">
+    <div class="step-label">1 / 4 단계</div>
+    <div class="step-title">기본 정보를 알려주세요</div>
+    <div class="step-desc">정확한 건강 분석을 위해 신체 정보가 필요합니다. 모든 정보는 분석 목적으로만 사용됩니다.</div>
+
+    <div class="field">
+      <label>성별</label>
+      <div class="chip-group">
+        <div class="chip selected" data-group="gender" data-val="여성">여성</div>
+        <div class="chip" data-group="gender" data-val="남성">남성</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>연령</label>
+      <div class="slider-wrap">
+        <input type="range" min="20" max="70" value="35" id="ageSlider" step="1">
+        <span class="slider-val" id="ageVal">35세</span>
+      </div>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label>키 (cm)</label>
+        <input type="number" id="height" placeholder="예: 165" value="165" min="140" max="210">
+      </div>
+      <div class="field">
+        <label>현재 체중 (kg)</label>
+        <input type="number" id="weight" placeholder="예: 70" value="70" min="30" max="200">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>목표 체중 (kg)</label>
+      <input type="number" id="targetWeight" placeholder="예: 60" value="60" min="30" max="200">
+    </div>
+
+    <button class="btn-primary" onclick="goStep(1)">다음 단계 →</button>
+  </div>
+
+  <!-- ─── Step 1: 생활 환경 ─── -->
+  <div id="step1" class="hidden">
+    <div class="step-label">2 / 4 단계</div>
+    <div class="step-title">생활 환경을 알려주세요</div>
+    <div class="step-desc">일상 습관이 다이어트 효과와 건강 지표에 큰 영향을 미칩니다.</div>
+
+    <div class="field">
+      <label>하루 평균 수면 시간</label>
+      <div class="slider-wrap">
+        <input type="range" min="3" max="12" value="6" id="sleepSlider" step="0.5">
+        <span class="slider-val" id="sleepVal">6시간</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>스트레스 수준 (1~10)</label>
+      <div class="slider-wrap">
+        <input type="range" min="1" max="10" value="5" id="stressSlider" step="1">
+        <span class="slider-val" id="stressVal">5</span>
+      </div>
+      <div class="stress-labels">
+        <span>매우 낮음</span>
+        <span>보통</span>
+        <span>매우 높음</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>직업 활동량</label>
+      <div class="chip-group">
+        <div class="chip selected" data-group="activity" data-val="사무직(주로 앉아서 근무)">사무직</div>
+        <div class="chip" data-group="activity" data-val="혼합형(이동과 앉기 혼합)">혼합형</div>
+        <div class="chip" data-group="activity" data-val="활동직(서서 이동하며 근무)">활동직</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>현재 운동 빈도</label>
+      <div class="chip-group">
+        <div class="chip selected" data-group="exercise" data-val="거의 안 함">거의 안 함</div>
+        <div class="chip" data-group="exercise" data-val="주 1~2회">주 1~2회</div>
+        <div class="chip" data-group="exercise" data-val="주 3~4회">주 3~4회</div>
+        <div class="chip" data-group="exercise" data-val="매일">매일</div>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="goStep(2)">다음 단계 →</button>
+    <button class="btn-secondary" onclick="goStep(0)">← 이전</button>
+  </div>
+
+  <!-- ─── Step 2: 식습관 ─── -->
+  <div id="step2" class="hidden">
+    <div class="step-label">3 / 4 단계</div>
+    <div class="step-title">식습관을 알려주세요</div>
+    <div class="step-desc">식단 패턴을 분석하면 더욱 정밀한 감량 예측이 가능합니다.</div>
+
+    <div class="field">
+      <label>하루 식사 횟수</label>
+      <div class="chip-group">
+        <div class="chip" data-group="meals" data-val="1끼">1끼</div>
+        <div class="chip selected" data-group="meals" data-val="2끼">2끼</div>
+        <div class="chip" data-group="meals" data-val="3끼">3끼</div>
+        <div class="chip" data-group="meals" data-val="4끼 이상">4끼 이상</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>주로 먹는 식단 유형</label>
+      <div class="chip-group">
+        <div class="chip selected" data-group="diet" data-val="일반 한식">일반 한식</div>
+        <div class="chip" data-group="diet" data-val="배달·외식 위주">배달·외식</div>
+        <div class="chip" data-group="diet" data-val="채식 위주">채식</div>
+        <div class="chip" data-group="diet" data-val="고단백 위주">고단백</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>야식 빈도</label>
+      <div class="chip-group">
+        <div class="chip" data-group="lateEat" data-val="거의 안 먹음">거의 안 먹음</div>
+        <div class="chip selected" data-group="lateEat" data-val="주 1~2회">주 1~2회</div>
+        <div class="chip" data-group="lateEat" data-val="주 3~4회">주 3~4회</div>
+        <div class="chip" data-group="lateEat" data-val="매일">매일</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>음주 빈도</label>
+      <div class="chip-group">
+        <div class="chip selected" data-group="alcohol" data-val="거의 안 마심">거의 안 마심</div>
+        <div class="chip" data-group="alcohol" data-val="주 1~2회">주 1~2회</div>
+        <div class="chip" data-group="alcohol" data-val="주 3회 이상">주 3회 이상</div>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="analyzeBtn" onclick="runAnalysis()">AI 건강 분석 시작 →</button>
+    <button class="btn-secondary" onclick="goStep(1)">← 이전</button>
+  </div>
+
+  <!-- ─── 로딩 ─── -->
+  <div id="stepLoading" class="hidden">
+    <div class="loading-wrap">
+      <div class="spinner"></div>
+      <p id="loadingMsg">입력 정보를 분석하고 있습니다...</p>
+      <p class="loading-progress" id="loadingProgress">잠시만 기다려주세요</p>
+    </div>
+  </div>
+
+  <!-- ─── Step 3: 결과 ─── -->
+  <div id="step3" class="hidden fade-in">
+    <div class="step-label">분석 완료</div>
+    <div class="step-title">맞춤 건강 분석 결과</div>
+    <div id="resultContent"></div>
+  </div>
+
+</div>
+
+<script>
+const state = {
+  gender: '여성', age: 35, height: 165, weight: 70, targetWeight: 60,
+  sleep: 6, stress: 5,
+  activity: '사무직(주로 앉아서 근무)',
+  exercise: '거의 안 함',
+  meals: '2끼', diet: '일반 한식',
+  lateEat: '주 1~2회', alcohol: '거의 안 마심'
+};
+
+/* ── 슬라이더 ── */
+const ageSlider = document.getElementById('ageSlider');
+const ageVal    = document.getElementById('ageVal');
+ageSlider.addEventListener('input', () => {
+  state.age = +ageSlider.value;
+  ageVal.textContent = ageSlider.value + '세';
+});
+
+const sleepSlider = document.getElementById('sleepSlider');
+const sleepVal    = document.getElementById('sleepVal');
+sleepSlider.addEventListener('input', () => {
+  state.sleep = +sleepSlider.value;
+  sleepVal.textContent = sleepSlider.value + '시간';
+});
+
+const stressSlider = document.getElementById('stressSlider');
+const stressVal    = document.getElementById('stressVal');
+stressSlider.addEventListener('input', () => {
+  state.stress = +stressSlider.value;
+  stressVal.textContent = stressSlider.value;
+});
+
+/* ── 칩 선택 ── */
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', function () {
+    const g = this.dataset.group;
+    document.querySelectorAll(`.chip[data-group="${g}"]`)
+            .forEach(c => c.classList.remove('selected'));
+    this.classList.add('selected');
+    state[g] = this.dataset.val;
+  });
+});
+
+/* ── 화면 전환 ── */
+function goStep(n) {
+  ['step0','step1','step2','step3','stepLoading'].forEach(id => {
+    document.getElementById(id).classList.add('hidden');
+  });
+  if (n <= 2) {
+    const el = document.getElementById('step' + n);
+    el.classList.remove('hidden');
+    el.classList.add('fade-in');
+    setTimeout(() => el.classList.remove('fade-in'), 400);
+  }
+  updateDot(n);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateDot(current) {
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById('dot' + i);
+    d.className = 'step-dot';
+    if (i < current) d.classList.add('done');
+    else if (i === current) d.classList.add('active');
+  }
+}
+
+/* ── 분석 실행 ── */
+const loadingMessages = [
+  '신체 정보를 계산하고 있습니다...',
+  '생활 패턴을 분석하고 있습니다...',
+  '감량 예측 모델을 실행하고 있습니다...',
+  '건강 리포트를 생성하고 있습니다...'
+];
+
+let msgTimer;
+let msgIdx = 0;
+
+async function runAnalysis() {
+  /* 입력값 반영 */
+  state.height       = +document.getElementById('height').value       || 165;
+  state.weight       = +document.getElementById('weight').value       || 70;
+  state.targetWeight = +document.getElementById('targetWeight').value || 60;
+
+  /* 로딩 화면 */
+  ['step0','step1','step2','step3'].forEach(id =>
+    document.getElementById(id).classList.add('hidden'));
+  document.getElementById('stepLoading').classList.remove('hidden');
+  updateDot(3);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  msgIdx = 0;
+  document.getElementById('loadingMsg').textContent = loadingMessages[0];
+  document.getElementById('loadingProgress').textContent = '잠시만 기다려주세요';
+  msgTimer = setInterval(() => {
+    msgIdx = (msgIdx + 1) % loadingMessages.length;
+    document.getElementById('loadingMsg').textContent = loadingMessages[msgIdx];
+  }, 1800);
+
+  const h = state.height;
+  const w = state.weight;
+  const t = state.targetWeight;
+  const bmi = (w / ((h / 100) ** 2)).toFixed(1);
+  const lossNeeded = Math.max(0, w - t).toFixed(1);
+
+  const prompt = `당신은 건강 전문 AI 분석가입니다. 다음 고객 정보를 바탕으로 다이어트 및 건강 분석 리포트를 JSON으로 작성하세요.
+
+[고객 정보]
+- 성별: ${state.gender}, 나이: ${state.age}세
+- 키: ${h}cm, 현재 체중: ${w}kg, BMI: ${bmi}
+- 목표 체중: ${t}kg (감량 목표: ${lossNeeded}kg)
+- 수면: ${state.sleep}시간/일
+- 스트레스: ${state.stress}/10
+- 직업 활동량: ${state.activity}
+- 운동 빈도: ${state.exercise}
+- 하루 식사: ${state.meals}
+- 식단 유형: ${state.diet}
+- 야식: ${state.lateEat}
+- 음주: ${state.alcohol}
+
+아래 JSON 형식으로만 응답하세요. JSON 외 텍스트, 마크다운 코드블록 없이 순수 JSON만 출력하세요:
+{
+  "riskLevel": "낮음" 또는 "보통" 또는 "높음",
+  "bmi": ${bmi},
+  "bmiStatus": "저체중/정상/과체중/비만 중 하나",
+  "expectedWeeks": 정수 (예상 목표 달성 주수),
+  "monthlyLoss": 소수점1자리 숫자 (월 평균 감량 kg),
+  "fatLossPercent": 소수점1자리 숫자 (예상 체지방 감소율 %),
+  "muscleRisk": "낮음" 또는 "보통" 또는 "높음",
+  "metabolicAge": 정수 (예상 대사 나이),
+  "insights": ["분석 포인트1 (25자 이내)", "분석 포인트2 (25자 이내)", "분석 포인트3 (25자 이내)"],
+  "ctaMessage": "방문을 유도하는 개인화 메시지 (45자 이내)"
+}`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await resp.json();
+    const raw  = data.content.map(c => c.text || '').join('');
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(clean);
+
+    clearInterval(msgTimer);
+    showResult(result);
+
+  } catch (err) {
+    clearInterval(msgTimer);
+    /* 폴백 결과 */
+    const bmiNum = parseFloat(bmi);
+    const fallback = {
+      riskLevel: state.stress >= 7 || state.sleep < 5 ? '높음' : '보통',
+      bmi: bmiNum,
+      bmiStatus: bmiNum < 18.5 ? '저체중' : bmiNum < 23 ? '정상' : bmiNum < 25 ? '과체중' : '비만',
+      expectedWeeks: Math.round(lossNeeded / 0.6 * 4),
+      monthlyLoss: 2.2,
+      fatLossPercent: 3.8,
+      muscleRisk: state.exercise === '거의 안 함' ? '높음' : '보통',
+      metabolicAge: state.age + Math.round(state.stress * 0.5),
+      insights: [
+        '수면 부족이 식욕 호르몬에 영향을 줍니다',
+        '스트레스 관리가 감량 성공의 핵심입니다',
+        '야식 빈도 줄이면 월 0.8kg 추가 감량 가능합니다'
+      ],
+      ctaMessage: '전문 코치와 함께라면 더 빠르고 안전한 목표 달성이 가능합니다'
+    };
+    showResult(fallback);
+  }
+}
+
+/* ── 결과 렌더링 ── */
+function showResult(r) {
+  document.getElementById('stepLoading').classList.add('hidden');
+  const el = document.getElementById('step3');
+  el.classList.remove('hidden');
+  el.classList.add('fade-in');
+  setTimeout(() => el.classList.remove('fade-in'), 400);
+
+  const tagClass = r.riskLevel === '낮음' ? 'green' : r.riskLevel === '보통' ? 'amber' : 'red';
+  const months = (r.expectedWeeks / 4.3).toFixed(1);
+  const ageDiff = r.metabolicAge - state.age;
+  const ageDiffText = ageDiff > 0 ? `실제보다 +${ageDiff}세` : ageDiff < 0 ? `실제보다 ${ageDiff}세` : '실제와 동일';
+  const ageDiffClass = ageDiff > 2 ? 'bad' : ageDiff < 0 ? 'good' : 'neutral';
+
+  document.getElementById('resultContent').innerHTML = `
+    <div class="tag ${tagClass}">건강 위험도: ${r.riskLevel}</div>
+
+    <div class="result-card highlight">
+      <div class="rc-label">예상 목표 달성 기간</div>
+      <div class="rc-value">${r.expectedWeeks}주 <span>(약 ${months}개월)</span></div>
+      <div class="rc-sub">월 평균 ${r.monthlyLoss}kg 감량 기준 · 목표 ${state.targetWeight}kg</div>
+    </div>
+
+    <div class="metrics-grid">
+      <div class="metric-item">
+        <div class="mi-label">현재 BMI</div>
+        <div class="mi-val">${r.bmi}</div>
+        <div class="mi-change bad">${r.bmiStatus}</div>
+      </div>
+      <div class="metric-item">
+        <div class="mi-label">대사 나이</div>
+        <div class="mi-val">${r.metabolicAge}세</div>
+        <div class="mi-change ${ageDiffClass}">${ageDiffText}</div>
+      </div>
+      <div class="metric-item">
+        <div class="mi-label">예상 체지방 감소</div>
+        <div class="mi-val">${r.fatLossPercent}%</div>
+        <div class="mi-change good">목표 달성 시</div>
+      </div>
+      <div class="metric-item">
+        <div class="mi-label">근육 손실 위험</div>
+        <div class="mi-val">${r.muscleRisk}</div>
+        <div class="mi-change ${r.muscleRisk === '낮음' ? 'good' : r.muscleRisk === '높음' ? 'bad' : 'neutral'}">관리 필요</div>
+      </div>
+    </div>
+
+    <div class="result-card">
+      <div class="rc-label" style="margin-bottom:10px;">AI 핵심 분석 인사이트</div>
+      <ul class="insight-list">
+        ${r.insights.map(i => `
+          <li>
+            <div class="insight-dot"></div>
+            <span>${i}</span>
+          </li>`).join('')}
+      </ul>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="cta-card">
+      <h3>전문가 1:1 맞춤 관리 프로그램</h3>
+      <p>${r.ctaMessage}<br><br>지점 방문 시 정밀 인바디 검사 + 전담 코치 무료 상담이 제공됩니다.</p>
+      <button class="btn-cta" onclick="goReservation()">지점 예약 상담 신청 →</button>
+    </div>
+
+    <button class="btn-secondary" onclick="resetApp()">다시 분석하기</button>
+    <p class="disclaimer">본 분석 결과는 참고용이며 의학적 진단을 대체하지 않습니다.<br>정확한 건강 상태는 전문가와 상담하시기 바랍니다.</p>
+  `;
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function goReservation() {
+  alert('예약 페이지로 이동합니다.\n(실제 서비스에서는 예약 시스템 URL로 연결됩니다)');
+}
+
+function resetApp() {
+  document.getElementById('resultContent').innerHTML = '';
+  goStep(0);
+}
+</script>
+</body>
+</html>
